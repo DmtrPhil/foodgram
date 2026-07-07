@@ -2,13 +2,22 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from recipes.validators import validator_cooking_time
-from recipes.models import Recipe
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 
 User = get_user_model()
 
-class RecipeSerializer(serializers.ModelSerializer):
-    
 
+class RecipeIngredientCreateSerializer(serializers.Serializer):
+    id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
+    amount = serializers.IntegerField(min_value=1)
+
+
+class RecipeCreateSerializer(serializers.ModelSerializer):
+    ingredients = RecipeIngredientCreateSerializer(many=True)
+    tags = serializers.PrimaryKeyRelatedField(
+        queryset=Tag.objects.all(), many=True
+    )
+    
     class Meta:
         model = Recipe
         fields = (
@@ -19,11 +28,48 @@ class RecipeSerializer(serializers.ModelSerializer):
             'text',
             'cooking_time',
         )
-
-    def create(self, validated_data):
-        validated_data['author'] = self.context['request'].user
-        return super().create(validated_data)
     
     def validate_cooking_time(self, value):
         validator_cooking_time(value)
         return value
+
+    def create(self, validated_data):
+        tags = validated_data.pop('tags')
+        ingredients = validated_data.pop('ingredients')
+        recipe = self.create_recipe(validated_data)
+        self.add_tags(recipe, tags)
+        self.add_ingredients(recipe, ingredients)
+
+        return recipe
+
+    def create_recipe(self, validated_data):
+        return Recipe.objects.create(
+            author =  self.context['request'].user,
+            **validated_data
+        )
+    
+    def add_tags(self, recipe, tags):
+        recipe.tags.set(tags)
+    
+    def add_ingredients(self, recipe, ingredients):
+        for ingredient in ingredients:
+            RecipeIngredient.objects.create(
+                recipe=recipe,
+                ingredient=ingredient['id'],
+                amount=ingredient['amount']
+            )
+
+
+class TagSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Tag
+        fields = ('name', 'slug')
+
+
+class IngredientSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Ingredient
+        fields = ('name', 'measurement_unit')
+

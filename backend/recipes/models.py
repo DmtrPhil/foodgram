@@ -1,22 +1,44 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
+from .constants import (
+    MAX_NAME_LENGTH, MAX_NAME_LENGHT_TAG,
+    MAX_SLUG_LENGHT_TAG, MAX_STR_LENGHT,
+    MAX_NAME_LENGTH_INGREDIENTS, MAX_LENGHT_MEASUREMENT_UNIT,
+)
 from .validators import validator_cooking_time
 
 User = get_user_model()
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=256, verbose_name='Название')
-    slug = models.SlugField(max_length=20, verbose_name='Слаг')
+    name = models.CharField(
+        max_length=MAX_NAME_LENGHT_TAG,
+        verbose_name='Название',
+        unique=True
+    )
+    slug = models.SlugField(
+        max_length=MAX_SLUG_LENGHT_TAG,
+        unique=True,
+        verbose_name='Слаг',
+    )
+
+    def __str__(self):
+        return self.name[:MAX_STR_LENGHT]
 
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=256, verbose_name='Название')
+    name = models.CharField(
+        max_length=MAX_NAME_LENGTH_INGREDIENTS,
+        verbose_name='Название',
+        )
     measurement_unit = models.CharField(
-        max_length=20,
+        max_length=MAX_LENGHT_MEASUREMENT_UNIT,
         verbose_name='Единица измерения'
     )
+
+    def __str__(self):
+        return self.name[:MAX_STR_LENGHT]
 
 
 class Recipe(models.Model):
@@ -25,7 +47,7 @@ class Recipe(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Автор рецепта'
     )
-    name = models.CharField(max_length=256, verbose_name='Название')
+    name = models.CharField(max_length=MAX_NAME_LENGTH, verbose_name='Название')
     image = models.ImageField(
         upload_to='api/images/',
         verbose_name='Изображение'
@@ -45,8 +67,10 @@ class Recipe(models.Model):
     cooking_time = models.PositiveSmallIntegerField(
         validators=(validator_cooking_time,),
         verbose_name='Время приготовления (в минутах)'
-
     )
+
+    def __str__(self):
+        return self.name[:MAX_STR_LENGHT]
 
 
 class RecipeIngredient(models.Model):
@@ -63,16 +87,18 @@ class RecipeIngredient(models.Model):
     amount = models.PositiveIntegerField('Количество')
 
 
-class Favorite(models.Model):
+class UserRecipeModel(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='Пользователь'
+        verbose_name='Пользователь',
+        related_name='%(class)s'
     )
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='Рецепт'
+        verbose_name='Рецепт',
+        related_name='%(class)s'
     )
 
     class Meta:
@@ -81,3 +107,21 @@ class Favorite(models.Model):
                 fields=['user', 'recipe'],
                 name='unique_favorite'),
         )
+        abstract = True
+    
+    def __str__(self):
+        return self.name[:MAX_STR_LENGHT]
+
+
+class Favorite(UserRecipeModel):
+
+    class Meta(UserRecipeModel.Meta):
+        verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранное'
+
+
+class Cart(UserRecipeModel):
+
+    class Meta(UserRecipeModel.Meta):
+        verbose_name = 'Корзина'
+        verbose_name_plural = 'Корзина'
