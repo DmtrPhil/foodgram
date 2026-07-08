@@ -60,6 +60,33 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             )
 
 
+class RecipeListSerializer(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
+    ingredients = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shoping_cart = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id',
+            'tags',
+            'image',
+            'name',
+            'text',
+            'cooking_time',
+            'author',
+            'ingredients',
+            'is_favorited',
+            'is_in_shoping_cart'
+        )
+    
+    def get_ingredients(self, obj):
+        recipe_ingredients = RecipeIngredient.objects.filter(recipe=obj)
+        
+
+
 class TagSerializer(serializers.ModelSerializer):
 
     class Meta:
