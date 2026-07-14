@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from .validators import username_validator
+from recipes.validators import validator_image_size
 from recipes.constants import (
     MAX_EMAIL_LENGHT,
     MAX_USERNAME_LENGHT,
@@ -46,17 +47,18 @@ class User(AbstractUser):
         upload_to='avatars/',
         null=True,
         blank=True,
-        verbose_name='Аватар'
+        verbose_name='Аватар',
+        validators=[validator_image_size]
     )
 
     class Meta:
         ordering = ('username',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-    
+
     def __str__(self):
         return self.username[:MAX_STR_LENGTH]
-    
+
     @property
     def is_admin(self):
         return self.is_superuser or self.role == self.ADMIN
