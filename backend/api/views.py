@@ -1,25 +1,28 @@
+import uuid
 from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import render
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.response import Response
 from rest_framework.permissions import (
     IsAuthenticated,
-    AllowAny
+    AllowAny,
+    SAFE_METHODS
 )
 
-from .filters import RecipeFilter
+from .filters import IngredientFilter, RecipeFilter
 from .permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (
     IngredientSerializer,
-    UserSerializer,
-    UserCreateSerializer,
+    CustomUserSerializer,
+    CustomUserCreateSerializer,
+    CustomSetPasswordSerializer,
     RecipeListSerializer,
     RecipeCreateSerializer,
     RecipeMinifiedSerializer,
     SubscriptionSerializer,
-    SetPasswordSerializer,
     TagSerializer,
 )
 from recipes.models import (
@@ -37,12 +40,12 @@ User = get_user_model()
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = CustomUserSerializer
 
     def get_serializer_class(self):
         if self.action == 'create':
-            return UserCreateSerializer
-        return UserSerializer
+            return CustomUserCreateSerializer
+        return CustomUserSerializer
 
     def get_permissions(self):
         if self.action == 'create':
@@ -53,21 +56,33 @@ class UserViewSet(viewsets.ModelViewSet):
             'subscriptions',
             'set_password',
             'avatar',
-            'me'
+            'me',
         ):
             return (IsAuthenticated(),)
         if self.action in ('list', 'retrieve'):
             return (AllowAny(),)
         return (IsAdmin(),)
+    
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=('get', 'put', 'patch'))
     def me(self, request):
-        serializer = self.get_serializer(request.user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        if request.method == 'GET':
+            serializer = self.get_serializer(request.user)
+            return Response(serializer.data)
+        serializer = self.get_serializer(
+            request.user,
+            data=request.data,
+            partial=(request.method == 'PATCH')
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=('post',))
     def set_password(self, request):
-        serializer = SetPasswordSerializer(
+        serializer = CustomSetPasswordSerializer(
             data=request.data,
             context={'request': request}
         )
@@ -96,7 +111,7 @@ class UserViewSet(viewsets.ModelViewSet):
         )
         recipes_limit = request.query_params.get('recipes_limit')
         serializer = SubscriptionSerializer(
-            subscription,
+            author,
             context={'request': request, 'recipes_limit': recipes_limit}
         )
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -119,8 +134,9 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def subscriptions(self, request):
         subscriptions = Subscription.objects.filter(user=request.user)
+        authors = [sub.author for sub in subscriptions]
         recipes_limit = request.query_params.get('recipes_limit')
-        page = self.paginate_queryset(subscriptions)
+        page = self.paginate_queryset(authors)
         serializer = SubscriptionSerializer(
             page,
             many=True,
@@ -128,15 +144,19 @@ class UserViewSet(viewsets.ModelViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=False, methods=['put', 'delete'])
+    @action(detail=False, methods=('put', 'delete'), url_path='me/avatar')
     def avatar(self, request):
         if request.method == 'PUT':
-            if 'avatar' not in request.FILES:
+            if 'avatar' not in request.FILES and 'avatar' not in request.data:
                 return Response(
                     {'error': 'Файл не передан'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            request.user.avatar = request.FILES['avatar']
+            if 'avatar' in request.FILES:
+                request.user.avatar = request.FILES['avatar']
+            else:
+                from api.serializers import Base64ImageField
+                request.user.avatar = Base64ImageField().to_internal_value(request.data['avatar'])
             request.user.save()
             return Response(
                 {'avatar': request.user.avatar.url},
@@ -158,16 +178,54 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
 
     def get_serializer_class(self):
-        if self.action in ('create', 'update', 'partial_update'):
+        if self.action in ('update', 'partial_update'):
             return RecipeCreateSerializer
         return RecipeListSerializer
 
     def get_permissions(self):
-        if self.action in ('list', 'retrieve'):
+        if self.action in ('get_link', 'list', 'retrieve'):
             return (AllowAny(),)
         if self.action in ('update', 'partial_update', 'destroy'):
             return (IsAuthorOrReadOnly(),)
         return (IsAuthenticated(),)
+    
+    def create(self, request, *args, **kwargs):
+        serializer = RecipeCreateSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        recipe = serializer.save()
+        response_serializer = RecipeListSerializer(
+            recipe,
+            context={'request': request}
+        )
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        
+        serializer = RecipeCreateSerializer(
+            instance,
+            data=request.data,
+            partial=partial,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        recipe = serializer.save()
+        
+        response_serializer = RecipeListSerializer(
+            recipe,
+            context={'request': request}
+        )
+        return Response(
+            response_serializer.data,
+            status=status.HTTP_200_OK
+        )
 
     @action(detail=True, methods=['post'])
     def favorite(self, request, pk=None):
@@ -248,22 +306,39 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         return response
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], url_path='get-link')
     def get_link(self, request, pk=None):
         recipe = self.get_object()
-        short_link = request.build_absolute_uri(f'/s/{recipe.short_link}')
+        if not recipe.short_link:
+            recipe.short_link = uuid.uuid4().hex[:8]
+            recipe.save()
+        short_link = request.build_absolute_uri(f'/s/{recipe.short_link}/')
         return Response({'short-link': short_link})
 
 
-class TagViewSet(viewsets.ReadOnlyModelViewSet):
+class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = (IsAdminOrReadOnly,)
+    pagination_class = None
+
+    def check_permissions(self, request):
+        if request.method not in SAFE_METHODS:
+            if not request.user.is_authenticated or not request.user.is_staff:
+                raise MethodNotAllowed(request.method)
+        super().check_permissions(request)
 
 
-class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
+class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = (filters.SearchFilter,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = IngredientFilter
     search_fields = ('name',)
+    pagination_class = None
+    
+    def check_permissions(self, request):
+        if request.method not in SAFE_METHODS:
+            if not request.user.is_authenticated or not request.user.is_staff:
+                raise MethodNotAllowed(request.method)
+        super().check_permissions(request)

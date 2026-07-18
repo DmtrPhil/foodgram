@@ -19,6 +19,8 @@ class User(AbstractUser):
         (USER, 'Пользователь'),
         (ADMIN, 'Администратор'),
     )
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
     email = models.EmailField(
         max_length=MAX_EMAIL_LENGHT,
         unique=True,

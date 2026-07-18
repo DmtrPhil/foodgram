@@ -53,7 +53,8 @@ class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        verbose_name='Автор рецепта'
+        verbose_name='Автор рецепта',
+        related_name='recipes'
     )
     name = models.CharField(max_length=MAX_NAME_LENGTH, verbose_name='Название')
     image = models.ImageField(
@@ -128,11 +129,6 @@ class UserRecipeModel(models.Model):
     )
 
     class Meta:
-        constraints = (
-            models.UniqueConstraint(
-                fields=('user', 'recipe'),
-                name='unique_favorite'),
-        )
         abstract = True
 
     def __str__(self):
@@ -141,16 +137,26 @@ class UserRecipeModel(models.Model):
 
 class Favorite(UserRecipeModel):
 
-    class Meta(UserRecipeModel.Meta):
+    class Meta:
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_favorite'),
+        )
 
 
 class Cart(UserRecipeModel):
 
-    class Meta(UserRecipeModel.Meta):
+    class Meta:
         verbose_name = 'Корзина'
         verbose_name_plural = 'Корзина'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_cart'),
+        )
 
 
 class Subscription(models.Model):
