@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from django.db import connection
 from django.core.management.base import BaseCommand
 
 from recipes.models import Ingredient
@@ -25,6 +26,8 @@ class Command(BaseCommand):
                 self.style.ERROR(f'Файл не найден: {file_path}')
             )
             return
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM sqlite_sequence WHERE name='recipes_ingredient';")
         with open(file_path, 'r', encoding='utf-8') as json_file:
             ingredients_data = json.load(json_file)
         created_count = 0

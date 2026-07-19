@@ -102,6 +102,15 @@ DJOSER = {
     },
 }
 
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'collected_static'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+AVATARS_PATH = 'users/avatars'
+RECIPES_IMAGES_PATH = 'recipes/images/'
+
 LANGUAGE_CODE = 'ru-RU'
 
 TIME_ZONE = 'Europe/Moscow'

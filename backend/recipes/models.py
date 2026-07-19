@@ -15,6 +15,7 @@ from .validators import (
     validator_cooking_time,
     validator_image_size
 )
+from backend.settings import RECIPES_IMAGES_PATH
 
 User = get_user_model()
 
@@ -31,6 +32,10 @@ class Tag(models.Model):
         verbose_name='Слаг',
     )
 
+    class Meta:
+        verbose_name = 'Тег'
+        verbose_name_plural = 'Теги'
+
     def __str__(self):
         return self.name[:MAX_STR_LENGTH]
 
@@ -44,6 +49,10 @@ class Ingredient(models.Model):
         max_length=MAX_LENGHT_MEASUREMENT_UNIT,
         verbose_name='Единица измерения'
     )
+    
+    class Meta:
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
 
     def __str__(self):
         return self.name[:MAX_STR_LENGTH]
@@ -58,7 +67,7 @@ class Recipe(models.Model):
     )
     name = models.CharField(max_length=MAX_NAME_LENGTH, verbose_name='Название')
     image = models.ImageField(
-        upload_to='images/',
+        upload_to=RECIPES_IMAGES_PATH,
         verbose_name='Изображение',
         validators=[validator_image_size]
     )
@@ -104,14 +113,20 @@ class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        verbose_name='Рецепт'
+        verbose_name='Рецепт',
+        related_name='recipe_ingredients'
     )
     ingredient = models.ForeignKey(
         Ingredient,
-        on_delete=models.CASCADE,
-        verbose_name='Ингридиент'
+        on_delete=models.PROTECT,
+        verbose_name='Ингридиент',
+        related_name='recipe_ingredients'
     )
     amount = models.PositiveIntegerField('Количество')
+
+    class Meta:
+        verbose_name = 'Ингредиент рецепта'
+        verbose_name_plural = 'Ингредиенты рецептов'
 
 
 class UserRecipeModel(models.Model):

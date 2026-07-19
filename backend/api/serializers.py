@@ -158,7 +158,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         f'Ингредиент с id {ingredient_id} не существует'
                     )
-        else:
+        elif not self.instance:
             raise serializers.ValidationError('Добавьте хотя бы один ингредиент')
         if 'tags' in data:
             tags = data.get('tags', [])
@@ -183,6 +183,14 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
+        if 'ingredients' not in validated_data:
+            raise serializers.ValidationError(
+                {'ingredients': 'Это поле обязательно'}
+            )
+        if 'tags' not in validated_data:
+            raise serializers.ValidationError(
+                {'tags': 'Это поле обязательно'}
+            )
         if 'ingredients' in validated_data:
             ingredients = validated_data.get('ingredients', [])
             if not ingredients:
@@ -196,11 +204,12 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         if 'tags' in validated_data:
             instance.tags.set(validated_data['tags'])
         if 'ingredients' in validated_data:
-            instance.ingredients.all().delete()
+            instance.recipe_ingredients.all().delete()
             for ingredient_data in validated_data['ingredients']:
+                ingredient = Ingredient.objects.get(id=ingredient_data['id'])
                 RecipeIngredient.objects.create(
                     recipe=instance,
-                    ingredient=ingredient_data['id'],
+                    ingredient=ingredient,
                     amount=ingredient_data['amount']
                 )
         return instance
