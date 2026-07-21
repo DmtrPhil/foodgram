@@ -15,7 +15,6 @@ from .validators import (
     validator_cooking_time,
     validator_image_size
 )
-from backend.settings import RECIPES_IMAGES_PATH
 
 User = get_user_model()
 
@@ -49,7 +48,7 @@ class Ingredient(models.Model):
         max_length=MAX_LENGHT_MEASUREMENT_UNIT,
         verbose_name='Единица измерения'
     )
-    
+
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
@@ -65,9 +64,12 @@ class Recipe(models.Model):
         verbose_name='Автор рецепта',
         related_name='recipes'
     )
-    name = models.CharField(max_length=MAX_NAME_LENGTH, verbose_name='Название')
+    name = models.CharField(
+        max_length=MAX_NAME_LENGTH,
+        verbose_name='Название'
+    )
     image = models.ImageField(
-        upload_to=RECIPES_IMAGES_PATH,
+        upload_to='recipes/images/',
         verbose_name='Изображение',
         validators=[validator_image_size]
     )

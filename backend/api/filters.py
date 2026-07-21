@@ -24,7 +24,7 @@ class RecipeFilter(filters.FilterSet):
         if value and self.request.user.is_authenticated:
             return queryset.filter(cart__user=self.request.user)
         return queryset
-    
+
     def filter_tags(self, queryset, name, value):
         tags = self.request.query_params.getlist('tags')
         if not tags:

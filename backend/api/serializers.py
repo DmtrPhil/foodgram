@@ -1,7 +1,6 @@
 import base64
 
 from rest_framework import serializers
-from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
@@ -10,7 +9,9 @@ from djoser.serializers import (
     UserSerializer as DjoserUserSerializer
 )
 
-from recipes.validators import validator_cooking_time, validator_ingredients, validator_tags
+from recipes.validators import (
+    validator_cooking_time, validator_ingredients, validator_tags
+)
 from recipes.models import (
     Cart, Favorite, Ingredient,
     Recipe, RecipeIngredient, Tag,
@@ -69,7 +70,9 @@ class CustomUserSerializer(DjoserUserSerializer):
 
 
 class CustomSetPasswordSerializer(serializers.Serializer):
-    new_password = serializers.CharField(write_only=True, validators=(validate_password,))
+    new_password = serializers.CharField(
+        write_only=True, validators=(validate_password,)
+    )
     current_password = serializers.CharField(write_only=True)
 
     def validate_current_password(self, value):
@@ -106,7 +109,7 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecipeIngredient
         fields = ('id', 'amount')
-    
+
     def create(self, validated_data):
         recipe = self.context.get('recipe')
         ingredient_id = validated_data.get('id')
@@ -117,6 +120,7 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
             ingredient=ingredient,
             amount=amount
         )
+
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
     image = Base64ImageField(required=True)
@@ -143,7 +147,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     def validate_cooking_time(self, value):
         validator_cooking_time(value)
         return value
-    
+
     def validate(self, data):
         if 'ingredients' in data:
             ingredients = data.get('ingredients', [])
@@ -159,7 +163,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                         f'Ингредиент с id {ingredient_id} не существует'
                     )
         elif not self.instance:
-            raise serializers.ValidationError('Добавьте хотя бы один ингредиент')
+            raise serializers.ValidationError(
+                'Добавьте хотя бы один ингредиент'
+            )
         if 'tags' in data:
             tags = data.get('tags', [])
             validator_tags(tags)
@@ -176,7 +182,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         for ingredient_data in ingredients_data:
             ingredient_serializer = RecipeIngredientCreateSerializer(
                 data=ingredient_data,
-                context={'recipe': recipe, 'request': self.context.get('request')}
+                context={
+                    'recipe': recipe,
+                    'request': self.context.get('request')
+                }
             )
             ingredient_serializer.is_valid(raise_exception=True)
             ingredient_serializer.save(recipe=recipe)

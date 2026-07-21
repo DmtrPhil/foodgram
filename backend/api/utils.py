@@ -4,4 +4,4 @@ from recipes.models import Recipe
 
 def short_link_redirect(request, short_link):
     recipe = get_object_or_404(Recipe, short_link=short_link)
-    return redirect('recipe-detail', pk=recipe.id)
+    return redirect(f'/recipes/{recipe.id}/')

@@ -1,8 +1,10 @@
-# build env
-FROM node:21.7.1-alpine
+FROM node:18
 WORKDIR /app
-COPY package*.json ./
+
+COPY package.json package-lock.json ./
 RUN npm install
-COPY . ./
+
+COPY . .
 RUN npm run build
-CMD cp -r build result_build
+
+CMD cp -r /app/build/static/. /static/

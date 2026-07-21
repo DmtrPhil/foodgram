@@ -12,7 +12,6 @@ def client():
 
 @pytest.mark.django_db
 def test_create_user(client):
-    """Тест создания пользователя"""
     data = {
         'username': 'testuser',
         'email': 'test@test.com',
@@ -31,13 +30,11 @@ def test_create_user(client):
 
 @pytest.mark.django_db
 def test_get_ingredients(client):
-    """Тест получения ингредиентов"""
     response = client.get('/api/ingredients/')
     assert response.status_code == 200
 
 
 @pytest.mark.django_db
 def test_get_tags(client):
-    """Тест получения тегов"""
     response = client.get('/api/tags/')
     assert response.status_code == 200

@@ -15,7 +15,7 @@ class Command(BaseCommand):
             'file_path',
             type=str,
             nargs='?',
-            default='../data/ingredients.json',
+            default='/app/recipes/data/ingredients.json',
             help='Путь к JSON-файлу'
         )
 
@@ -27,14 +27,18 @@ class Command(BaseCommand):
             )
             return
         cursor = connection.cursor()
-        cursor.execute("DELETE FROM sqlite_sequence WHERE name='recipes_ingredient';")
+        cursor.execute(
+            "TRUNCATE TABLE recipes_ingredient RESTART IDENTITY CASCADE;"
+        )
         with open(file_path, 'r', encoding='utf-8') as json_file:
             ingredients_data = json.load(json_file)
         created_count = 0
         skipped_count = 0
         for ingredient_item in ingredients_data:
             ingredient_name = ingredient_item.get('name', '').strip()
-            measurement_unit = ingredient_item.get('measurement_unit', '').strip()
+            measurement_unit = ingredient_item.get(
+                'measurement_unit', ''
+            ).strip()
             if not ingredient_name:
                 skipped_count += 1
                 continue

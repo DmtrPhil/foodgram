@@ -55,12 +55,12 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'author__username', 'author__email')
     list_filter = ('tags', 'author')
     readonly_fields = ('short_link',)
-    
+
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
             favorites_count=Count('favorited_by')
         )
-    
+
     def favorites_count(self, obj):
         return obj.favorites_count
     favorites_count.short_description = 'В избранном'

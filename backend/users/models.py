@@ -2,7 +2,6 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from .validators import username_validator
-from backend.settings import AVATARS_PATH
 from recipes.validators import validator_image_size
 from recipes.constants import (
     MAX_EMAIL_LENGHT,
@@ -47,7 +46,7 @@ class User(AbstractUser):
         default=USER,
     )
     avatar = models.ImageField(
-        upload_to=AVATARS_PATH,
+        upload_to='avatars/',
         null=True,
         blank=True,
         verbose_name='Аватар',

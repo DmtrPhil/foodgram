@@ -9,10 +9,12 @@ def validator_cooking_time(value):
             'Время приготовления не может быть меньше 1 минуты.'
         )
 
+
 def validator_image_size(value):
     if value.size > MAX_IMAGE_SIZE:
         raise ValidationError('Файл слишком большой (макс. 5 МБ)')
     return value
+
 
 def validator_ingredients(ingredients):
     if not ingredients:
@@ -20,8 +22,9 @@ def validator_ingredients(ingredients):
     ingredient_ids = [item['id'] for item in ingredients]
     if len(ingredient_ids) != len(set(ingredient_ids)):
         raise ValidationError('Ингредиенты не должны повторяться')
-    
+
     return ingredients
+
 
 def validator_tags(tags):
     if not tags:
