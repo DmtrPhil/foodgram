@@ -295,7 +295,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                     }
                 ingredients[name]['amount'] += recipe_ingredient.amount
         content = '\n'.join(
-            f'{name} — {data['amount']} {data['unit']}'
+            f'{name} — {data["amount"]} {data["unit"]}'
             for name, data in ingredients.items()
         )
         response = Response(content, content_type='text/plain')
