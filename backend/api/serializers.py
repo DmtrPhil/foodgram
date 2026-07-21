@@ -1,22 +1,25 @@
 import base64
 
-from rest_framework import serializers
-from django.core.files.base import ContentFile
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from djoser.serializers import (
-    UserCreateSerializer as DjoserUserCreateSerializer,
-    UserSerializer as DjoserUserSerializer
-)
-
-from recipes.validators import (
-    validator_cooking_time, validator_ingredients, validator_tags
-)
+from django.core.files.base import ContentFile
+from djoser.serializers import UserCreateSerializer as DjoserUserCreateSerializer
+from djoser.serializers import UserSerializer as DjoserUserSerializer
 from recipes.models import (
-    Cart, Favorite, Ingredient,
-    Recipe, RecipeIngredient, Tag,
+    Cart,
+    Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
     Subscription,
+    Tag,
 )
+from recipes.validators import (
+    validator_cooking_time,
+    validator_ingredients,
+    validator_tags,
+)
+from rest_framework import serializers
 
 User = get_user_model()
 

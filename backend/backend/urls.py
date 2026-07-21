@@ -1,6 +1,6 @@
-from django.contrib import admin
-from django.urls import path, include
 from api.utils import short_link_redirect
+from django.contrib import admin
+from django.urls import include, path
 
 urlpatterns = [
     path('admin/', admin.site.urls),

@@ -1,15 +1,15 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-
-from .validators import username_validator
-from recipes.validators import validator_image_size
 from recipes.constants import (
     MAX_EMAIL_LENGHT,
-    MAX_USERNAME_LENGHT,
     MAX_FIRST_NAME_LENGHT,
     MAX_LAST_NAME_LENGT,
-    MAX_STR_LENGTH
+    MAX_STR_LENGTH,
+    MAX_USERNAME_LENGHT,
 )
+from recipes.validators import validator_image_size
+
+from .validators import username_validator
 
 
 class User(AbstractUser):

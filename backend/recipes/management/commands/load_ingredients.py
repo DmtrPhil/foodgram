@@ -1,9 +1,8 @@
 import json
 from pathlib import Path
 
-from django.db import connection
 from django.core.management.base import BaseCommand
-
+from django.db import connection
 from recipes.models import Ingredient
 
 

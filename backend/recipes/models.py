@@ -1,20 +1,18 @@
 import uuid
+
 from django.contrib.auth import get_user_model
 from django.db import models
 
 from .constants import (
+    MAX_LENGHT_MEASUREMENT_UNIT,
     MAX_NAME_LENGTH,
+    MAX_NAME_LENGTH_INGREDIENTS,
     MAX_NAME_LENGTH_TAG,
+    MAX_SHORT_LINK_LENGHT,
     MAX_SLUG_LENGTH_TAG,
     MAX_STR_LENGTH,
-    MAX_NAME_LENGTH_INGREDIENTS,
-    MAX_LENGHT_MEASUREMENT_UNIT,
-    MAX_SHORT_LINK_LENGHT,
 )
-from .validators import (
-    validator_cooking_time,
-    validator_image_size
-)
+from .validators import validator_cooking_time, validator_image_size
 
 User = get_user_model()
 

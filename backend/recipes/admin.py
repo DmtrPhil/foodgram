@@ -1,14 +1,15 @@
 from django.contrib import admin
 from django.db.models import Count
+
 from .models import (
-    User,
-    Recipe,
-    Ingredient,
-    Tag,
-    RecipeIngredient,
+    Cart,
     Favorite,
+    Ingredient,
+    Recipe,
+    RecipeIngredient,
     Subscription,
-    Cart
+    Tag,
+    User,
 )
 
 

@@ -1,29 +1,7 @@
 import uuid
+
 from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
-from rest_framework.exceptions import MethodNotAllowed
-from rest_framework.response import Response
-from rest_framework.permissions import (
-    IsAuthenticated,
-    AllowAny,
-    SAFE_METHODS
-)
-
-from .filters import IngredientFilter, RecipeFilter
-from .permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorOrReadOnly
-from .serializers import (
-    IngredientSerializer,
-    CustomUserSerializer,
-    CustomUserCreateSerializer,
-    CustomSetPasswordSerializer,
-    RecipeListSerializer,
-    RecipeCreateSerializer,
-    RecipeMinifiedSerializer,
-    SubscriptionSerializer,
-    TagSerializer,
-)
 from recipes.models import (
     Cart,
     Favorite,
@@ -32,6 +10,25 @@ from recipes.models import (
     RecipeIngredient,
     Subscription,
     Tag,
+)
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
+from rest_framework.response import Response
+
+from .filters import IngredientFilter, RecipeFilter
+from .permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorOrReadOnly
+from .serializers import (
+    CustomSetPasswordSerializer,
+    CustomUserCreateSerializer,
+    CustomUserSerializer,
+    IngredientSerializer,
+    RecipeCreateSerializer,
+    RecipeListSerializer,
+    RecipeMinifiedSerializer,
+    SubscriptionSerializer,
+    TagSerializer,
 )
 
 User = get_user_model()
