@@ -1,114 +1,89 @@
-[![Workflow main status](https://github.com/arefiture/foodgram/actions/workflows/main.yml/badge.svg)](https://github.com/arefiture/foodgram/actions)
+[![Workflow main status](https://github.com/DmtrPhi/foodgram/actions/workflows/main.yml/badge.svg)](https://github.com/DmtrPhil/foodgram/actions)
 
 ![Nginx](https://img.shields.io/badge/nginx-%23009639.svg?style=for-the-badge&logo=nginx&logoColor=white) ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E) ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54) ![Django](https://img.shields.io/badge/django-%23092E20.svg?style=for-the-badge&logo=django&logoColor=white) ![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white) ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white) ![GitHub Actions](https://img.shields.io/badge/github%20actions-%232671E5.svg?style=for-the-badge&logo=githubactions&logoColor=white)
 
-## Описание проекта
+# Foodgram
 
-Foodgram - учебный проект от Яндекс.Практикум.
+Сервис для публикации и хранения кулинарных рецептов. Пользователи могут создавать собственные рецепты, добавлять чужие в избранное, формировать список покупок и подписываться на других авторов.
 
-Цель этого сайта — дать возможность пользователям создавать и хранить рецепты на онлайн-платформе. Кроме того, можно скачать список продуктов, необходимых для приготовления блюда, просмотреть рецепты друзей и добавить любимые рецепты в список избранных.
+## Стек технологий
 
-## Технологии
+- **Backend:** Python 3.9, Django 3.2.3, Django REST Framework 3.12.4
+- **Frontend:** JavaScript
+- **База данных:** PostgreSQL
+- **Контейнеризация:** Docker, Docker Compose
+- **CI/CD:** GitHub Actions
 
-- Python 3.9
-- Django 3.2.3
-- Django REST framework 3.12.4
-- JavaScript
+## Установка и запуск
 
-## Запуск проекта из образов с Docker Hub
+### Требования
 
-При первом запуске убедитесь, что Docker есть и работает:
+- Установленный Docker и Docker Compose
 
-```bash
-sudo systemctl status docker
-```
-<details>
-    <summary>Что делать, если Docker отсутствует</summary>
-    
-1. Скачиваем и устанавилваем curl:
+### Инструкция
 
-    ```bash
-    sudo apt update
-    sudo apt install curl
-    ```
+1. Склонируйте репозиторий:
 
-2. С помощью утилиты скачиваем скрипт для установки докера с официального сайта:
-
-    ```bash
-    curl -fSL https://get.docker.com -o get-docker.sh 
-    ```
-
-3. Запускаем сохраненный скрипт:
-
-    ```bash
-    sudo sh ./get-docker.sh
-    ```
-
-4. Дополнительно скачиваем утилу Docker Compose:
-
-    ```bash
-    sudo apt install docker-compose-plugin 
-    ```
-
-5. Проверяем работоспособность Docker:
-
-    ```bash
-    sudo systemctl status docker
-    ```
-
-</details>
-
-Для запуска необходимо создать папку проекта, например `foodgram` и перейти в нее:
-
-```bash
-mkdir foodgram
+git clone https://github.com/DmtrPhil/foodgram.git
 cd foodgram
-```
 
-В папку проекта скачиваем файл из директории infra/ `docker-compose.production.yml` и запускаем его:
+2. Создайте файл .env в корне проекта и заполните его по примеру из .env.example:
 
-```bash
-sudo docker compose -f docker-compose.production.yml up -d
-```
+POSTGRES_USER=your_user
+POSTGRES_PASSWORD=your_password
+POSTGRES_DB=your_db
+DB_NAME=your_db
+DB_HOST=db
+DB_PORT=5432
+SECRET_KEY=your_secret_key
 
-Далее автоматически скачаются образы, произойдет создание и включение контейнеров и объедение их в одну сеть.
+3. Перейдите в папку с файлом docker-compose.prodaction.yml, что бы получить возможность запустить контейнеры
 
-## Настройки переменных окружения (о том, как заполнить env)
+cd infra/
 
-В корне проекта следует создать файл .env и заполнить по образу из файла .env.example
+4. Запустите контейнеры:
 
-## После запуска: Миграции, сбор статистики
+sudo docker compose docker-compose.production.yml up -d
 
-После запуска необходимо выполнить сбор статистики и миграции бэкенда.
-Статистика фронтенда собирается во время запуска контейнера, после чего он останавливается. 
+5. Выполните миграции и соберите статику:
 
-```bash
-sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
+sudo docker compose docker-compose.production.yml exec backend python manage.py migrate
+sudo docker compose docker-compose.production.yml exec backend python manage.py collectstatic
+sudo docker compose docker-compose.production.yml exec backend cp -r /app/collected_static/. /backend_static/static/
 
-sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic
+6. Загрузите ингредиенты:
 
-sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/collected_static/. /backend_static/static/
-```
+sudo docker compose docker-compose.production.yml exec backend python manage.py load_ingredients
 
-После этого проект будет доступен по адресам:
-```
-localhost
-```
+7. Проект будет доступен по адресу:
 
-## На случай, если нужно наполнение тегами и ингредиентами:
+http://localhost
 
-После первого развёртывания для работы с рецептами нужны будут теги и ингредиенты.
-Предусмотрено начальное наполнение этих таблиц в базе командой:
-```bash
-sudo docker compose -f docker-compose.production.yml exec backend python manage.py data_loader
-```
-Если среди перечисленных ингредиентов и тегов нет нужных - обратитесь к админу сайта.
+### Остановка проекта
 
-## Остановка проекта:
+sudo docker compose docker-compose.production.yml down
 
-```bash
-sudo docker compose -f docker-compose.production.yml down
-```
+## API Документация
 
-## Автор:
-[DmtrPhil](https://github.com/DntrPhil)
+После запуска проекта документация доступна по адресу:
+
+http://localhost/api/docs/
+
+## Основные возможности
+
+- Регистрация и авторизация пользователей с выдачей токена
+- Управление рецептами: создание, редактирование, удаление
+- Избранное: добавление рецептов в список избранного
+- Список покупок: формирование и скачивание списка ингредиентов для выбранных рецептов
+- Подписки: возможность подписываться на других авторов и просматривать их рецепты
+- Короткие ссылки: генерация сокращённых ссылок на рецепты
+- Фильтрация: поиск рецептов по автору, тегам, избранному и списку покупок
+- Админ-панель: полностью руссифицированная панель администратора
+
+## Тестирование
+
+Для проверки функциональности API импортируйте коллекцию Postman из директории postman_collection/.
+
+## Автор
+
+[DmtrPhil](https://github.com/DmtrPhil)

@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.core.exceptions import ValidationError
 from django.db.models import Count
 
 from .models import (
@@ -7,27 +9,8 @@ from .models import (
     Ingredient,
     Recipe,
     RecipeIngredient,
-    Subscription,
     Tag,
-    User,
 )
-
-
-@admin.register(User)
-class UserAdmin(admin.ModelAdmin):
-    list_display = (
-        'id',
-        'username',
-        'email',
-        'first_name',
-        'last_name',
-        'is_active',
-        'is_staff'
-    )
-    list_display_links = ('id', 'username')
-    search_fields = ('email', 'username')
-    list_filter = ('is_active', 'is_staff')
-    ordering = ('username',)
 
 
 @admin.register(Tag)
@@ -56,6 +39,7 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('name', 'author__username', 'author__email')
     list_filter = ('tags', 'author')
     readonly_fields = ('short_link',)
+    list_select_related = ('author',)
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
@@ -65,6 +49,11 @@ class RecipeAdmin(admin.ModelAdmin):
     def favorites_count(self, obj):
         return obj.favorites_count
     favorites_count.short_description = 'В избранном'
+
+    def save_model(self, request, obj, form, change):
+        if not obj.ingredients.exists():
+            raise ValidationError("Рецепт должен содержать хотя бы один ингредиент.")
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(RecipeIngredient)
@@ -78,12 +67,6 @@ class RecipeIngredientAdmin(admin.ModelAdmin):
 class FavoriteAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'recipe')
     search_fields = ('user__username', 'recipe__name')
-
-
-@admin.register(Subscription)
-class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user', 'author')
-    search_fields = ('user__username', 'author__username')
 
 
 @admin.register(Cart)

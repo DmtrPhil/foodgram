@@ -4,11 +4,11 @@ from django.contrib.auth import get_user_model
 from django.db import models
 
 from .constants import (
-    MAX_LENGHT_MEASUREMENT_UNIT,
+    MAX_LENGTH_MEASUREMENT_UNIT,
     MAX_NAME_LENGTH,
     MAX_NAME_LENGTH_INGREDIENTS,
     MAX_NAME_LENGTH_TAG,
-    MAX_SHORT_LINK_LENGHT,
+    MAX_SHORT_LINK_LENGTH,
     MAX_SLUG_LENGTH_TAG,
     MAX_STR_LENGTH,
 )
@@ -43,7 +43,7 @@ class Ingredient(models.Model):
         verbose_name='Название',
     )
     measurement_unit = models.CharField(
-        max_length=MAX_LENGHT_MEASUREMENT_UNIT,
+        max_length=MAX_LENGTH_MEASUREMENT_UNIT,
         verbose_name='Единица измерения'
     )
 
@@ -87,7 +87,7 @@ class Recipe(models.Model):
         verbose_name='Время приготовления (в минутах)'
     )
     short_link = models.CharField(
-        max_length=MAX_SHORT_LINK_LENGHT,
+        max_length=MAX_SHORT_LINK_LENGTH,
         unique=True,
         blank=True,
         verbose_name='Короткая ссылка'
@@ -98,7 +98,7 @@ class Recipe(models.Model):
         verbose_name_plural = 'Рецепты'
 
     def generate_short_link(self):
-        return uuid.uuid4().hex[:MAX_SHORT_LINK_LENGHT]
+        return uuid.uuid4().hex[:MAX_SHORT_LINK_LENGTH]
 
     def save(self, *args, **kwargs):
         if not self.short_link:
@@ -172,31 +172,3 @@ class Cart(UserRecipeModel):
                 fields=('user', 'recipe'),
                 name='unique_cart'),
         )
-
-
-class Subscription(models.Model):
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Подписчик',
-        related_name='follower'
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Автор',
-        related_name='following'
-    )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('user', 'author'),
-                name='unique_subscription'
-            )
-        ]
-        verbose_name = 'Подписка'
-        verbose_name_plural = 'Подписки'
-
-    def __str__(self):
-        return f'{self.user} подписан на {self.author}'

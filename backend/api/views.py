@@ -2,46 +2,54 @@ import uuid
 
 from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
+from rest_framework.response import Response
+
+from .filters import IngredientFilter, RecipeFilter
+from .permissions import IsAuthorOrReadOnly
 from recipes.models import (
     Cart,
     Favorite,
     Ingredient,
     Recipe,
     RecipeIngredient,
-    Subscription,
     Tag,
 )
-from rest_framework import status, viewsets
-from rest_framework.decorators import action
-from rest_framework.exceptions import MethodNotAllowed
-from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
-from rest_framework.response import Response
-
-from .filters import IngredientFilter, RecipeFilter
-from .permissions import IsAdmin, IsAdminOrReadOnly, IsAuthorOrReadOnly
 from .serializers import (
-    CustomSetPasswordSerializer,
-    CustomUserCreateSerializer,
-    CustomUserSerializer,
+    SetPasswordSerializer,
+    UserCreateSerializer,
+    UserSerializer,
     IngredientSerializer,
     RecipeCreateSerializer,
-    RecipeListSerializer,
+    RecipeSerializer,
     RecipeMinifiedSerializer,
     SubscriptionSerializer,
     TagSerializer,
 )
+from users.models import Subscription
 
 User = get_user_model()
 
 
+def short_link_redirect(request, short_link):
+    recipe = get_object_or_404(Recipe, short_link=short_link)
+    return redirect(f'/recipes/{recipe.id}/')
+
+
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
+    serializer_class = UserSerializer
 
     def get_serializer_class(self):
         if self.action == 'create':
-            return CustomUserCreateSerializer
-        return CustomUserSerializer
+            return UserCreateSerializer
+        return UserSerializer
 
     def get_permissions(self):
         if self.action == 'create':
@@ -57,7 +65,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return (IsAuthenticated(),)
         if self.action in ('list', 'retrieve'):
             return (AllowAny(),)
-        return (IsAdmin(),)
+        return (IsAuthenticated(),)
 
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
@@ -78,7 +86,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=('post',))
     def set_password(self, request):
-        serializer = CustomSetPasswordSerializer(
+        serializer = SetPasswordSerializer(
             data=request.data,
             context={'request': request}
         )
@@ -170,60 +178,27 @@ class UserViewSet(viewsets.ModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all().order_by('-id')
-    serializer_class = RecipeListSerializer
+    serializer_class = RecipeSerializer
     permission_classes = (IsAuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
     def get_serializer_class(self):
-        if self.action in ('update', 'partial_update'):
+        if self.action in ('create', 'update', 'partial_update'):
             return RecipeCreateSerializer
-        return RecipeListSerializer
+        return RecipeSerializer
 
     def get_permissions(self):
+        if self.action in ('create', 'update', 'partial_update', 'destroy'):
+            return (IsAuthenticated(), IsAuthorOrReadOnly())
+        if self.action in ('favorite', 'shopping_cart', 'delete_favorite', 'delete_shopping_cart'):
+            return (IsAuthenticated(),)
         if self.action in ('get_link', 'list', 'retrieve'):
             return (AllowAny(),)
-        if self.action in ('update', 'partial_update', 'destroy'):
-            return (IsAuthorOrReadOnly(),)
-        return (IsAuthenticated(),)
+        return super().get_permissions()
 
-    def create(self, request, *args, **kwargs):
-        serializer = RecipeCreateSerializer(
-            data=request.data,
-            context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        recipe = serializer.save()
-        response_serializer = RecipeListSerializer(
-            recipe,
-            context={'request': request}
-        )
-        return Response(
-            response_serializer.data,
-            status=status.HTTP_201_CREATED
-        )
-
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-
-        serializer = RecipeCreateSerializer(
-            instance,
-            data=request.data,
-            partial=partial,
-            context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        recipe = serializer.save()
-
-        response_serializer = RecipeListSerializer(
-            recipe,
-            context={'request': request}
-        )
-        return Response(
-            response_serializer.data,
-            status=status.HTTP_200_OK
-        )
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
     @action(detail=True, methods=['post'])
     def favorite(self, request, pk=None):
@@ -294,14 +269,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
                         'unit': recipe_ingredient.ingredient.measurement_unit
                     }
                 ingredients[name]['amount'] += recipe_ingredient.amount
-        content = '\n'.join(
+        content = '\r\n'.join(
             f'{name} — {data["amount"]} {data["unit"]}'
             for name, data in ingredients.items()
         )
-        response = Response(content, content_type='text/plain')
-        response['Content-Disposition'] = (
-            'attachment; filename="shopping_list.txt"'
-        )
+        response = HttpResponse(content, content_type='text/plain; charset=utf-8')
+        response['Content-Disposition'] = 'attachment; filename="shopping_list.txt"'
         return response
 
     @action(detail=True, methods=['get'], url_path='get-link')
@@ -314,29 +287,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response({'short-link': short_link})
 
 
-class TagViewSet(viewsets.ModelViewSet):
+class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = (AllowAny,)
     pagination_class = None
 
-    def check_permissions(self, request):
-        if request.method not in SAFE_METHODS:
-            if not request.user.is_authenticated or not request.user.is_staff:
-                raise MethodNotAllowed(request.method)
-        super().check_permissions(request)
 
-
-class IngredientViewSet(viewsets.ModelViewSet):
+class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = (AllowAny,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = IngredientFilter
     search_fields = ('name',)
     pagination_class = None
 
-    def check_permissions(self, request):
-        if request.method not in SAFE_METHODS:
-            if not request.user.is_authenticated or not request.user.is_staff:
-                raise MethodNotAllowed(request.method)
-        super().check_permissions(request)
