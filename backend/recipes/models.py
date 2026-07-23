@@ -98,6 +98,12 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
+    def clean(self):
+        if not self.recipe_ingredients.exists():
+            raise ValidationError(
+                'Рецепт должен содержать хотя бы один ингредиент.'
+            )
+
     def generate_short_link(self):
         return uuid.uuid4().hex[:MAX_SHORT_LINK_LENGTH]
 
@@ -129,11 +135,10 @@ class RecipeIngredient(models.Model):
         verbose_name = 'Ингредиент рецепта'
         verbose_name_plural = 'Ингредиенты рецептов'
 
-    def clean(self):
-        if self.amount <= 0:
-            raise ValidationError(
-                'Количество ингредиента должно быть больше 0.'
-            )
+    def __str__(self):
+        return f'{
+            self.ingredient.name
+        } - {self.amount} {self.ingredient.measurement_unit}'
 
 
 class UserRecipeModel(models.Model):

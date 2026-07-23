@@ -11,6 +11,13 @@ from .models import (
 )
 
 
+class RecipeIngredientInline(admin.TabularInline):
+    model = RecipeIngredient
+    extra = 1
+    min_num = 1
+    autocomplete_fields = ('ingredient',)
+
+
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'slug')
@@ -38,6 +45,7 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ('tags', 'author')
     readonly_fields = ('short_link',)
     list_select_related = ('author',)
+    inlines = (RecipeIngredientInline,)
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
