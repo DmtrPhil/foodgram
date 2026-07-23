@@ -10,18 +10,12 @@ from djoser.serializers import (
 from rest_framework import serializers
 
 from recipes.models import (
-    Cart,
-    Favorite,
     Ingredient,
     Recipe,
     RecipeIngredient,
     Tag,
 )
-from recipes.validators import (
-    validator_cooking_time,
-    validator_ingredients,
-    validator_tags,
-)
+from recipes.validators import (validator_cooking_time)
 from users.models import Subscription
 
 User = get_user_model()
@@ -111,7 +105,9 @@ class RecipeMinifiedSerializer(serializers.ModelSerializer):
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField(source='ingredient.id')
     name = serializers.CharField(source='ingredient.name')
-    measurement_unit = serializers.CharField(source='ingredient.measurement_unit')
+    measurement_unit = serializers.CharField(
+        source='ingredient.measurement_unit'
+    )
     amount = serializers.IntegerField()
 
     class Meta:
@@ -140,7 +136,9 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
 class RecipeSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)
-    ingredients = RecipeIngredientSerializer(many=True, source='recipe_ingredients')
+    ingredients = RecipeIngredientSerializer(
+        many=True, source='recipe_ingredients'
+    )
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -202,10 +200,16 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError('Ингредиенты обязательны.')
         ingredient_ids = [ingredient['id'] for ingredient in value]
-        if not Ingredient.objects.filter(id__in=ingredient_ids).count() == len(ingredient_ids):
-            raise serializers.ValidationError('Один или несколько ингредиентов не существуют.')
+        if not Ingredient.objects.filter(
+            id__in=ingredient_ids
+        ).count() == len(ingredient_ids):
+            raise serializers.ValidationError(
+                'Один или несколько ингредиентов не существуют.'
+            )
         if len(ingredient_ids) != len(set(ingredient_ids)):
-            raise serializers.ValidationError('Ингредиенты не должны повторяться.')
+            raise serializers.ValidationError(
+                'Ингредиенты не должны повторяться.'
+            )
         return value
 
     def validate_tags(self, value):
@@ -250,8 +254,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'tags': 'Это поле обязательно'}
             )
-        
-        # Проверяем, что поля не пустые
+
         if not ingredients:
             raise serializers.ValidationError(
                 {'ingredients': 'Добавьте хотя бы один ингредиент'}
@@ -260,7 +263,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'tags': 'Добавьте хотя бы один тег'}
             )
-    
+
         instance.name = validated_data.get('name', instance.name)
         instance.text = validated_data.get('text', instance.text)
         instance.cooking_time = validated_data.get('cooking_time', instance.cooking_time)
