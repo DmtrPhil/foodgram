@@ -130,7 +130,7 @@ class RecipeIngredient(models.Model):
         verbose_name_plural = 'Ингредиенты рецептов'
 
     def clean(self):
-        if self.amount <= 0:
+        if self.amount is None or self.amount <= 0:
             raise ValidationError(
                 'Количество ингредиента должно быть больше 0.'
             )

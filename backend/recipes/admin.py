@@ -17,6 +17,11 @@ class RecipeIngredientInline(admin.TabularInline):
     min_num = 1
     autocomplete_fields = ('ingredient',)
 
+    def get_formset(self, request, obj=None, **kwargs):
+        formset = super().get_formset(request, obj, **kwargs)
+        formset.form.base_fields['amount'].required = True
+        return formset
+
 
 @admin.register(Tag)
 class TagAdmin(admin.ModelAdmin):
