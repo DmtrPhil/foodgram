@@ -41,7 +41,6 @@ def short_link_redirect(request, short_link):
     return redirect(f'/recipes/{recipe.id}/')
 
 
-
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -191,7 +190,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ('create', 'update', 'partial_update', 'destroy'):
             return (IsAuthenticated(), IsAuthorOrReadOnly())
-        if self.action in ('favorite', 'shopping_cart', 'delete_favorite', 'delete_shopping_cart'):
+        if self.action in (
+            'favorite',
+            'shopping_cart',
+            'delete_favorite',
+            'delete_shopping_cart'
+        ):
             return (IsAuthenticated(),)
         if self.action in ('get_link', 'list', 'retrieve'):
             return (AllowAny(),)
@@ -273,8 +277,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
             f'{name} — {data["amount"]} {data["unit"]}'
             for name, data in ingredients.items()
         )
-        response = HttpResponse(content, content_type='text/plain; charset=utf-8')
-        response['Content-Disposition'] = 'attachment; filename="shopping_list.txt"'
+        response = HttpResponse(
+            content,
+            content_type='text/plain; charset=utf-8'
+        )
+        response[
+            'Content-Disposition'
+        ] = 'attachment; filename="shopping_list.txt"'
         return response
 
     @action(detail=True, methods=['get'], url_path='get-link')
@@ -302,4 +311,3 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_class = IngredientFilter
     search_fields = ('name',)
     pagination_class = None
-

@@ -38,7 +38,9 @@ class Command(BaseCommand):
         skipped_count = 0
         for ingredient_item in ingredients_data:
             ingredient_name = ingredient_item.get('name', '').strip()
-            measurement_unit = ingredient_item.get('measurement_unit', '').strip()
+            measurement_unit = ingredient_item.get(
+                'measurement_unit', ''
+            ).strip()
             if not ingredient_name or not measurement_unit:
                 skipped_count += 1
                 continue
