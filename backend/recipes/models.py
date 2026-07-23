@@ -51,7 +51,6 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
-        ordering = ('name',)
 
     def __str__(self):
         return self.name[:MAX_STR_LENGTH]
@@ -99,12 +98,6 @@ class Recipe(models.Model):
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
-    def clean(self):
-        if not self.recipe_ingredients.exists():
-            raise ValidationError(
-                'Рецепт должен содержать хотя бы один ингредиент.'
-            )
-
     def generate_short_link(self):
         return uuid.uuid4().hex[:MAX_SHORT_LINK_LENGTH]
 
@@ -135,6 +128,12 @@ class RecipeIngredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент рецепта'
         verbose_name_plural = 'Ингредиенты рецептов'
+
+    def clean(self):
+        if self.amount <= 0:
+            raise ValidationError(
+                'Количество ингредиента должно быть больше 0.'
+            )
 
     def __str__(self):
         return f'{
