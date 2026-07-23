@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.core.exceptions import ValidationError
 from django.db.models import Count
 
 from .models import (
@@ -42,19 +41,12 @@ class RecipeAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
-            favorites_count=Count('favorited_by')
+            favorites_count=Count('favorite')
         )
 
     def favorites_count(self, obj):
         return obj.favorites_count
     favorites_count.short_description = 'В избранном'
-
-    def save_model(self, request, obj, form, change):
-        if not obj.ingredients.exists():
-            raise ValidationError(
-                'Рецепт должен содержать хотя бы один ингредиент.'
-            )
-        super().save_model(request, obj, form, change)
 
 
 @admin.register(RecipeIngredient)

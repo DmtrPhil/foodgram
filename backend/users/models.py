@@ -1,10 +1,11 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from recipes.constants import (
     MAX_EMAIL_LENGTH,
     MAX_FIRST_NAME_LENGTH,
-    MAX_LAST_NAME_LENGT,
+    MAX_LAST_NAME_LENGTH,
     MAX_STR_LENGTH,
     MAX_USERNAME_LENGTH,
 )
@@ -31,7 +32,7 @@ class User(AbstractUser):
         verbose_name='Имя'
     )
     last_name = models.CharField(
-        max_length=MAX_LAST_NAME_LENGT,
+        max_length=MAX_LAST_NAME_LENGTH,
         verbose_name='Фамилия'
     )
     avatar = models.ImageField(
@@ -74,6 +75,14 @@ class Subscription(models.Model):
         ]
         verbose_name = 'Подписка'
         verbose_name_plural = 'Подписки'
+
+    def clean(self):
+        if self.user == self.author:
+            raise ValidationError('Нельзя подписаться на себя.')
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'{self.user} подписан на {self.author}'

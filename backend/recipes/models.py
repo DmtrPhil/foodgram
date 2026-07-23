@@ -1,6 +1,7 @@
 import uuid
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from .constants import (
@@ -127,6 +128,12 @@ class RecipeIngredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент рецепта'
         verbose_name_plural = 'Ингредиенты рецептов'
+
+    def clean(self):
+        if self.amount <= 0:
+            raise ValidationError(
+                'Количество ингредиента должно быть больше 0.'
+            )
 
 
 class UserRecipeModel(models.Model):

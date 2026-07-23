@@ -1,6 +1,5 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from django.core.exceptions import ValidationError
 
 from .models import User, Subscription
 
@@ -26,8 +25,3 @@ class UserAdmin(BaseUserAdmin):
 class SubscriptionAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'author')
     search_fields = ('user__username', 'author__username')
-
-    def save_model(self, request, subscription, form, change):
-        if subscription.user == subscription.author:
-            raise ValidationError("Нельзя подписаться на себя.")
-        super().save_model(request, subscription, form, change)
