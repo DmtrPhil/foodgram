@@ -108,7 +108,7 @@ class UserViewSet(DjoserUserViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=False, methods=('put', 'delete'), url_path='me/avatar')
+    @action(detail=False, methods=('put',), url_path='me/avatar')
     def avatar(self, request):
         serializer = AvatarSerializer(
             request.user,
