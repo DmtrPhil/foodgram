@@ -1,6 +1,7 @@
 from django_filters import rest_framework as filters
+from django_filters.rest_framework import filters as drf_filters
 
-from recipes.models import Ingredient, Recipe
+from recipes.models import Ingredient, Recipe, Tag
 
 
 class RecipeFilter(filters.FilterSet):
@@ -8,8 +9,11 @@ class RecipeFilter(filters.FilterSet):
     is_in_shopping_cart = filters.NumberFilter(
         method='filter_is_in_shopping_cart'
     )
-    author = filters.NumberFilter(field_name='author__id')
-    tags = filters.CharFilter(method='filter_tags')
+    tags = drf_filters.ModelMultipleChoiceFilter(
+        queryset=Tag.objects.all(),
+        field_name='tags__slug',
+        to_field_name='slug',
+    )
 
     class Meta:
         model = Recipe
@@ -18,15 +22,11 @@ class RecipeFilter(filters.FilterSet):
     def filter_is_favorited(self, queryset, name, value):
         if value and self.request.user.is_authenticated:
             return queryset.filter(favorite__user=self.request.user)
-        if value and not self.request.user.is_authenticated:
-            return queryset.none()
         return queryset
 
     def filter_is_in_shopping_cart(self, queryset, name, value):
         if value and self.request.user.is_authenticated:
             return queryset.filter(cart__user=self.request.user)
-        if value and not self.request.user.is_authenticated:
-            return queryset.none()
         return queryset
 
     def filter_tags(self, queryset, name, value):

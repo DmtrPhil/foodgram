@@ -93,10 +93,12 @@ class Recipe(models.Model):
         blank=True,
         verbose_name='Короткая ссылка'
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
+        ordering = ('-created_at',)
 
     def generate_short_link(self):
         return uuid.uuid4().hex[:MAX_SHORT_LINK_LENGTH]
