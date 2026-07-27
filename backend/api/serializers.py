@@ -12,7 +12,6 @@ from recipes.models import (
     RecipeIngredient,
     Tag,
 )
-from recipes.validators import (validator_cooking_time)
 from recipes.constants import MIN_VALUE_AMOUNT
 from users.models import Subscription
 
