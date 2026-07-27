@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.contrib.auth.password_validation import validate_password
 from django.db import transaction
 from djoser.serializers import (
     UserSerializer as DjoserUserSerializer
@@ -43,7 +42,7 @@ class UserSerializer(DjoserUserSerializer):
         return (
             request
             and request.user.is_authenticated
-            and request.user.follower.filter(author=subscribed).exists()
+            and request.user.subscriptions.filter(author=subscribed).exists()
         )
 
 
@@ -255,19 +254,22 @@ class SubscriptionListSerializer(UserSerializer):
 
 
 class SubscriptionCreateSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Subscription
         fields = ('user', 'author')
-    
+
     def validate(self, data):
         user = data.get('user')
         author = data.get('author')
         if user == author:
             raise serializers.ValidationError('Нельзя подписаться на себя.')
         if Subscription.objects.filter(user=user, author=author).exists():
-            raise serializers.ValidationError('Вы уже подписаны на этого автора.')
+            raise serializers.ValidationError(
+                'Вы уже подписаны на этого автора.'
+            )
         return data
-    
+
     def to_representation(self, instance):
         return SubscriptionListSerializer(
             instance.author,
@@ -289,7 +291,7 @@ class FavoriteShoppingCartSerializer(serializers.Serializer):
         if model.objects.filter(user=user, recipe=recipe).exists():
             raise serializers.ValidationError('Рецепт уже добавлен.')
         return data
-    
+
     def save(self, **kwargs):
         request = self.context.get('request')
         recipe = self.context.get('recipe')

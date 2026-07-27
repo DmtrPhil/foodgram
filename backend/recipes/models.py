@@ -1,7 +1,7 @@
 import uuid
 
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 from .constants import (
@@ -13,7 +13,9 @@ from .constants import (
     MAX_SLUG_LENGTH_TAG,
     MAX_STR_LENGTH,
 )
-from .validators import validator_cooking_time, validator_image_size
+from .validators import (
+    validator_image_size
+)
 
 User = get_user_model()
 
@@ -51,6 +53,13 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('name', 'measurement_unit'),
+                name='unique_name_measurement_unit'
+            )
+        ]
+        ordering = ('name',)
 
     def __str__(self):
         return self.name[:MAX_STR_LENGTH]
@@ -70,7 +79,7 @@ class Recipe(models.Model):
     image = models.ImageField(
         upload_to='recipes/images/',
         verbose_name='Изображение',
-        validators=[validator_image_size]
+        validators=(validator_image_size,)
     )
     text = models.TextField('Текст')
     ingredients = models.ManyToManyField(
@@ -84,7 +93,14 @@ class Recipe(models.Model):
         verbose_name='Теги'
     )
     cooking_time = models.PositiveSmallIntegerField(
-        validators=(validator_cooking_time,),
+        validators=(
+            MinValueValidator(
+                1, 'Время приготовления не может быть меньше 1 минуты.'
+            ),
+            MaxValueValidator(
+                1000, 'Время приготовления не может превышать 1000 минут.'
+            )
+        ),
         verbose_name='Время приготовления (в минутах)'
     )
     short_link = models.CharField(
@@ -125,17 +141,22 @@ class RecipeIngredient(models.Model):
         verbose_name='Ингридиент',
         related_name='recipe_ingredients'
     )
-    amount = models.PositiveIntegerField('Количество')
+    amount = models.PositiveIntegerField(
+        'Количество',
+        validators=(
+            MinValueValidator(1, 'Количество не может быть меньше 1'),
+        ),
+    )
 
     class Meta:
         verbose_name = 'Ингредиент рецепта'
         verbose_name_plural = 'Ингредиенты рецептов'
-
-    def clean(self):
-        if self.amount is None or self.amount <= 0:
-            raise ValidationError(
-                'Количество ингредиента должно быть больше 0.'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('recipe', 'ingredient'),
+                name='unique_recipe_ingredient'
             )
+        ]
 
     def __str__(self):
         return (
@@ -144,7 +165,7 @@ class RecipeIngredient(models.Model):
         )
 
 
-class UserRecipeModel(models.Model):
+class UserRecipeAbstract(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -165,7 +186,7 @@ class UserRecipeModel(models.Model):
         return f'{self.user} - {self.recipe}'
 
 
-class Favorite(UserRecipeModel):
+class Favorite(UserRecipeAbstract):
 
     class Meta:
         verbose_name = 'Избранное'
@@ -177,7 +198,7 @@ class Favorite(UserRecipeModel):
         )
 
 
-class Cart(UserRecipeModel):
+class Cart(UserRecipeAbstract):
 
     class Meta:
         verbose_name = 'Корзина'

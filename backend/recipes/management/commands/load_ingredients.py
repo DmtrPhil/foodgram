@@ -33,8 +33,7 @@ class Command(BaseCommand):
                 self.style.ERROR(f'Ошибка в JSON: {e}')
             )
             return
-        created_count = 0
-        updated_count = 0
+        ingredients_to_create = []
         skipped_count = 0
         for ingredient_item in ingredients_data:
             ingredient_name = ingredient_item.get('name', '').strip()
@@ -44,20 +43,25 @@ class Command(BaseCommand):
             if not ingredient_name or not measurement_unit:
                 skipped_count += 1
                 continue
-            _, created = Ingredient.objects.update_or_create(
-                name=ingredient_name,
-                defaults={'measurement_unit': measurement_unit}
+            ingredients_to_create.append(
+                Ingredient(
+                    name=ingredient_name,
+                    measurement_unit=measurement_unit
+                )
             )
-            if created:
-                created_count += 1
-            else:
-                updated_count += 1
+        created_count = 0
+        if ingredients_to_create:
+            created_count = Ingredient.objects.bulk_create(
+                ingredients_to_create,
+                ignore_conflicts=True,
+            )
+            created_count = len(created_count)
+
         self.stdout.write(
             self.style.SUCCESS(
                 f'Загрузка завершена!'
-                f'\n   Создано новых: {created_count}'
-                f'\n   Обновлено существующих: {updated_count}'
-                f'\n   Пропущено: {skipped_count}'
+                f'\n   Создано: {created_count}'
+                f'\n   Пропущено (невалидные или дубли): {skipped_count}'
                 f'\n   Всего ингредиентов в БД: {Ingredient.objects.count()}'
             )
         )

@@ -15,7 +15,7 @@ from .validators import username_validator
 
 class User(AbstractUser):
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
     email = models.EmailField(
         max_length=MAX_EMAIL_LENGTH,
         unique=True,
@@ -57,13 +57,13 @@ class Subscription(models.Model):
         User,
         on_delete=models.CASCADE,
         verbose_name='Подписчик',
-        related_name='follower'
+        related_name='subscriptions'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор',
-        related_name='following'
+        related_name='subscribers'
     )
 
     class Meta:

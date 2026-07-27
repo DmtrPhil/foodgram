@@ -12,8 +12,7 @@ from rest_framework.decorators import action, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from .filters import IngredientFilter, RecipeFilter
-from .permissions import IsAuthorOrReadOnly
+from .filters import IngredientFilter
 from recipes.models import (
     Cart,
     Favorite,
@@ -100,7 +99,7 @@ class UserViewSet(DjoserUserViewSet):
 
     @action(detail=False, methods=['get'])
     def subscriptions(self, request):
-        authors = User.objects.filter(following__user=request.user)
+        authors = User.objects.filter(subscribers__user=request.user)
         page = self.paginate_queryset(authors)
         serializer = SubscriptionListSerializer(
             page,
@@ -110,7 +109,6 @@ class UserViewSet(DjoserUserViewSet):
         return self.get_paginated_response(serializer.data)
 
     @action(detail=False, methods=('put', 'delete'), url_path='me/avatar')
-
     def avatar(self, request):
         serializer = AvatarSerializer(
             request.user,
@@ -242,15 +240,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
             file,
             content_type='text/plain; charset=utf-8'
         )
-        response['Content-Disposition'] = 'attachment; filename="shopping_list.txt"'
+        response[
+            'Content-Disposition'
+        ] = 'attachment; filename="shopping_list.txt"'
         return response
 
     @action(
-            detail=True,
-            methods=('get',),
-            permission_classes=(AllowAny,),
-            url_path='get-link'
-        )
+        detail=True,
+        methods=('get',),
+        permission_classes=(AllowAny,),
+        url_path='get-link'
+    )
     def get_link(self, request, pk=None):
         recipe = self.get_object()
         if not recipe.short_link:

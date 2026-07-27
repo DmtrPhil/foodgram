@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.db.models import Count
+from django.utils.safestring import mark_safe
 
 from .models import (
     Cart,
@@ -57,9 +58,28 @@ class RecipeAdmin(admin.ModelAdmin):
             favorites_count=Count('favorite')
         )
 
+    def display_tags(self, obj):
+        return ', '.join(tag.name for tag in obj.tags.all())
+    display_tags.short_description = 'Теги'
+
+    def display_ingredients(self, obj):
+        return ', '.join(
+            recipe_ingredient.ingredient.name
+            for recipe_ingredient in obj.recipe_ingredients.all()
+        )
+    display_ingredients.short_description = 'Ингредиенты'
+
+    def image_preview(self, obj):
+        if obj.image:
+            return mark_safe(
+                f'<img src="{obj.image.url}" width="80" height="60" />'
+            )
+        return 'Нет изображения'
+    image_preview.short_description = 'Изображение'
+
+    @admin.display(description='В избранном')
     def favorites_count(self, obj):
         return obj.favorites_count
-    favorites_count.short_description = 'В избранном'
 
 
 @admin.register(RecipeIngredient)
