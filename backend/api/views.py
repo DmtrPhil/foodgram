@@ -62,7 +62,7 @@ class UserViewSet(DjoserUserViewSet):
     def me(self, request):
         serializer = self.get_serializer(
             request.user,
-            context=self.context
+            context={'request': request}
         )
         return Response(serializer.data)
 
@@ -71,14 +71,14 @@ class UserViewSet(DjoserUserViewSet):
         author = self.get_object()
         serializer = SubscriptionCreateSerializer(
             data={'user': request.user.id, 'author': author.id},
-            context=self.context
+            context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
             SubscriptionListSerializer(
                 author,
-                context=self.context
+                context={'request': request}
             ).data,
             status=status.HTTP_201_CREATED
         )
@@ -104,7 +104,7 @@ class UserViewSet(DjoserUserViewSet):
         serializer = SubscriptionListSerializer(
             page,
             many=True,
-            context=self.context
+            context={'request': request}
         )
         return self.get_paginated_response(serializer.data)
 
@@ -113,7 +113,7 @@ class UserViewSet(DjoserUserViewSet):
         serializer = AvatarSerializer(
             request.user,
             data=request.data,
-            context=self.context
+            context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
