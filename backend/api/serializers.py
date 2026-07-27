@@ -141,9 +141,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True,
     )
-    cooking_time = serializers.IntegerField(
-        validators=(validator_cooking_time,)
-    )
+    cooking_time = serializers.IntegerField()
 
     class Meta:
         model = Recipe
