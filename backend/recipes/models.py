@@ -60,7 +60,7 @@ class Ingredient(models.Model):
             models.UniqueConstraint(
                 fields=('name', 'measurement_unit'),
                 name='unique_name_measurement_unit'
-            )
+            ),
         )
         ordering = ('name',)
 
@@ -161,12 +161,12 @@ class RecipeIngredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент рецепта'
         verbose_name_plural = 'Ингредиенты рецептов'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
                 fields=('recipe', 'ingredient'),
                 name='unique_recipe_ingredient'
-            )
-        ]
+            ),
+        )
 
     def __str__(self):
         return (
@@ -204,7 +204,8 @@ class Favorite(UserRecipeAbstract):
         constraints = (
             models.UniqueConstraint(
                 fields=('user', 'recipe'),
-                name='unique_favorite'),
+                name='unique_favorite'
+            ),
         )
 
 
@@ -216,5 +217,6 @@ class Cart(UserRecipeAbstract):
         constraints = (
             models.UniqueConstraint(
                 fields=('user', 'recipe'),
-                name='unique_cart'),
+                name='unique_cart'
+            ),
         )
