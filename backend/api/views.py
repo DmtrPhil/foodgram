@@ -8,7 +8,7 @@ from django.http import HttpResponsePermanentRedirect, FileResponse
 from django.urls import reverse
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import status, viewsets
-from rest_framework.decorators import action, permission_classes
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -23,12 +23,11 @@ from recipes.models import (
 )
 from .serializers import (
     AvatarSerializer,
-    FavoriteShoppingCartSerializer,
+    BaseFavoriteShoppingCartSerializer,
     UserSerializer,
     IngredientSerializer,
     RecipeCreateSerializer,
     RecipeSerializer,
-    RecipeMinifiedSerializer,
     SubscriptionListSerializer,
     SubscriptionCreateSerializer,
     TagSerializer,
@@ -167,7 +166,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             request,
             pk,
             Favorite,
-            FavoriteShoppingCartSerializer
+            BaseFavoriteShoppingCartSerializer
         )
 
     @favorite.mapping.delete
@@ -194,7 +193,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             request,
             pk,
             Cart,
-            FavoriteShoppingCartSerializer
+            BaseFavoriteShoppingCartSerializer
         )
 
     @shopping_cart.mapping.delete

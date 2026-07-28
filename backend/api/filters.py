@@ -29,6 +29,7 @@ class RecipeFilter(filters.FilterSet):
             return queryset.filter(cart__user=self.request.user)
         return queryset
 
+
 class IngredientFilter(filters.FilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='startswith')
 

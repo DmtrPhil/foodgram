@@ -99,11 +99,13 @@ class Recipe(models.Model):
         validators=(
             MinValueValidator(
                 MIN_COOKING_TIME,
-                f'Время приготовления не может быть меньше {MIN_COOKING_TIME} минуты.'
+                'Время приготовления не может быть меньше '
+                f'{MIN_COOKING_TIME} минуты.'
             ),
             MaxValueValidator(
                 MAX_COOKING_TIME,
-                f'Время приготовления не может превышать {MAX_COOKING_TIME} минут.'
+                'Время приготовления не может превышать '
+                f'{MAX_COOKING_TIME} минут.'
             )
         ),
         verbose_name='Время приготовления (в минутах)'
