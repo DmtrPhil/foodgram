@@ -45,6 +45,9 @@ class RecipeAdmin(admin.ModelAdmin):
         'name',
         'author',
         'cooking_time',
+        'display_tags',
+        'display_ingredients',
+        'image_preview',
         'favorites_count'
     )
     search_fields = ('name', 'author__username', 'author__email')
@@ -58,24 +61,22 @@ class RecipeAdmin(admin.ModelAdmin):
             favorites_count=Count('favorite')
         )
 
+    @admin.display(description='Теги')
     def display_tags(self, obj):
         return ', '.join(tag.name for tag in obj.tags.all())
-    display_tags.short_description = 'Теги'
 
+    @admin.display(description='Ингредиенты')
     def display_ingredients(self, obj):
         return ', '.join(
             recipe_ingredient.ingredient.name
             for recipe_ingredient in obj.recipe_ingredients.all()
         )
-    display_ingredients.short_description = 'Ингредиенты'
 
+    @admin.display(description='Изображение')
     def image_preview(self, obj):
-        if obj.image:
-            return mark_safe(
-                f'<img src="{obj.image.url}" width="80" height="60" />'
-            )
-        return 'Нет изображения'
-    image_preview.short_description = 'Изображение'
+        return mark_safe(
+            f'<img src="{obj.image.url}" width="80" height="60" />'
+        )
 
     @admin.display(description='В избранном')
     def favorites_count(self, obj):

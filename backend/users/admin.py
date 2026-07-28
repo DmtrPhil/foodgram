@@ -14,7 +14,9 @@ class UserAdmin(BaseUserAdmin):
         'first_name',
         'last_name',
         'is_active',
-        'is_staff'
+        'is_staff',
+        'recipes_count',
+        'subscriptions_count',
     )
     list_display_links = ('id', 'username')
     search_fields = ('email', 'username')
@@ -24,7 +26,7 @@ class UserAdmin(BaseUserAdmin):
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(
             recipes_count=Count('recipes'),
-            subscriptions_count=Count('subscribers')
+            subscriptions_count=Count('subs_on_author')
         )
 
     @admin.display(description='Рецептов')

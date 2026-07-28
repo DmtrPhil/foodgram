@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import transaction
 from djoser.serializers import (
     UserSerializer as DjoserUserSerializer
@@ -7,12 +8,18 @@ from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 
 from recipes.models import (
+    Cart,
+    Favorite,
     Ingredient,
     Recipe,
     RecipeIngredient,
     Tag,
 )
-from recipes.constants import MIN_VALUE_AMOUNT
+from recipes.constants import (
+    MAX_COOKING_TIME,
+    MIN_COOKING_TIME,
+    MIN_VALUE_AMOUNT
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -41,7 +48,7 @@ class UserSerializer(DjoserUserSerializer):
         return (
             request
             and request.user.is_authenticated
-            and request.user.subscriptions.filter(author=subscribed).exists()
+            and request.user.subs_user.filter(author=subscribed).exists()
         )
 
 
@@ -141,7 +148,18 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         queryset=Tag.objects.all(),
         many=True,
     )
-    cooking_time = serializers.IntegerField()
+    cooking_time = serializers.IntegerField(
+        validators=(
+            MinValueValidator(
+                MIN_COOKING_TIME,
+                f'Время приготовления не может быть меньше {MIN_COOKING_TIME} минуты.'
+            ),
+            MaxValueValidator(
+                MAX_COOKING_TIME,
+                f'Время приготовления не может превышать {MAX_COOKING_TIME} минут.'
+            )
+        ),
+    )
 
     class Meta:
         model = Recipe
@@ -203,10 +221,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {'tags': 'Добавьте хотя бы один тег'}
             )
-        instance = super().update(instance, validated_data)
         instance.tags.set(tags)
-        self.update_ingredients(ingredients, instance)
-        return instance
+        instance.recipe_ingredients.all().delete()
+        self.create_ingredients(ingredients, instance)
+        return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         return RecipeSerializer(
@@ -224,7 +242,10 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class SubscriptionListSerializer(UserSerializer):
     recipes = serializers.SerializerMethodField()
-    recipes_count = serializers.IntegerField(read_only=True)
+    recipes_count = serializers.IntegerField(
+        read_only=True,
+        default=0
+    )
 
     class Meta(UserSerializer.Meta):
         fields = UserSerializer.Meta.fields + ('recipes', 'recipes_count')
@@ -245,9 +266,6 @@ class SubscriptionListSerializer(UserSerializer):
             many=True,
             context=self.context
         ).data
-
-    def get_recipes_count(self, user):
-        return user.recipes.count()
 
 
 class SubscriptionCreateSerializer(serializers.ModelSerializer):
@@ -274,7 +292,7 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
         ).data
 
 
-class FavoriteShoppingCartSerializer(serializers.Serializer):
+class BaseFavoriteShoppingCartSerializer(serializers.Serializer):
 
     def validate(self, data):
         request = self.context.get('request')
@@ -284,13 +302,27 @@ class FavoriteShoppingCartSerializer(serializers.Serializer):
             )
         recipe = data.get('recipe')
         user = request.user
-        model = self.context.get('model')
+        model = self.Meta.model
         if model.objects.filter(user=user, recipe=recipe).exists():
-            raise serializers.ValidationError('Рецепт уже добавлен.')
+            model_name = model._meta.verbose_name
+            raise serializers.ValidationError(
+                f'Рецепт уже добавлен в {model_name}.'
+            )
         return data
 
-    def save(self, **kwargs):
-        request = self.context.get('request')
-        recipe = self.context.get('recipe')
-        model = self.context.get('model')
-        return model.objects.create(user=request.user, recipe=recipe)
+    def to_representation(self, instance):
+        return RecipeMinifiedSerializer(instance.recipe).data
+
+
+class FavoriteSerializer(BaseFavoriteShoppingCartSerializer):
+
+    class Meta:
+        model = Favorite
+        fields = ('user', 'recipe')
+
+
+class ShoppingCartSerializer(BaseFavoriteShoppingCartSerializer):
+
+    class Meta:
+        model = Cart
+        fields = ('user', 'recipe')

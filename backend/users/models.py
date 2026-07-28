@@ -40,7 +40,7 @@ class User(AbstractUser):
         null=True,
         blank=True,
         verbose_name='Аватар',
-        validators=[validator_image_size]
+        validators=(validator_image_size)
     )
 
     class Meta:
@@ -57,13 +57,13 @@ class Subscription(models.Model):
         User,
         on_delete=models.CASCADE,
         verbose_name='Подписчик',
-        related_name='subscriptions'
+        related_name='subs_user'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор',
-        related_name='subscribers'
+        related_name='subs_on_author'
     )
 
     class Meta:

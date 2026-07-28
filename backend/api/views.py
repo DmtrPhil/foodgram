@@ -52,12 +52,6 @@ class UserViewSet(DjoserUserViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        if self.action == 'subscriptions':
-            queryset = queryset.annotate(recipes_count=Count('recipes'))
-        return queryset
-
     @action(detail=False, methods=('get',))
     def me(self, request):
         serializer = self.get_serializer(
@@ -75,13 +69,7 @@ class UserViewSet(DjoserUserViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(
-            SubscriptionListSerializer(
-                author,
-                context={'request': request}
-            ).data,
-            status=status.HTTP_201_CREATED
-        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
     def unsubscribe(self, request, pk=None):
@@ -97,9 +85,13 @@ class UserViewSet(DjoserUserViewSet):
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=('get',))
     def subscriptions(self, request):
-        authors = User.objects.filter(subscribers__user=request.user)
+        authors = User.objects.filter(
+            subs_on_author__user=request.user
+        ).annotate(
+            recipes_count=Count('recipes')
+        ).order_by('username')
         page = self.paginate_queryset(authors)
         serializer = SubscriptionListSerializer(
             page,
@@ -163,10 +155,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(
-            RecipeMinifiedSerializer(recipe).data,
-            status=status.HTTP_201_CREATED
-        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(
         detail=True,
@@ -182,7 +171,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     @favorite.mapping.delete
-    @permission_classes((IsAuthenticated,))
     def delete_favorite(self, request, pk=None):
         recipe = self.get_object()
         deleted, _ = Favorite.objects.filter(
@@ -210,7 +198,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         )
 
     @shopping_cart.mapping.delete
-    @permission_classes((IsAuthenticated,))
     def delete_shopping_cart(self, request, pk=None):
         recipe = self.get_object()
         deleted, _ = Cart.objects.filter(

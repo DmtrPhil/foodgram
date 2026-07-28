@@ -29,13 +29,6 @@ class RecipeFilter(filters.FilterSet):
             return queryset.filter(cart__user=self.request.user)
         return queryset
 
-    def filter_tags(self, queryset, name, value):
-        tags = self.request.query_params.getlist('tags')
-        if not tags:
-            return queryset
-        return queryset.filter(tags__slug__in=tags).distinct()
-
-
 class IngredientFilter(filters.FilterSet):
     name = filters.CharFilter(field_name='name', lookup_expr='startswith')
 

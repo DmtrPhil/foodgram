@@ -12,6 +12,9 @@ from .constants import (
     MAX_SHORT_LINK_LENGTH,
     MAX_SLUG_LENGTH_TAG,
     MAX_STR_LENGTH,
+    MIN_COOKING_TIME,
+    MAX_COOKING_TIME,
+    MIN_VALUE_AMOUNT
 )
 from .validators import (
     validator_image_size
@@ -53,12 +56,12 @@ class Ingredient(models.Model):
     class Meta:
         verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
-        constraints = [
+        constraints = (
             models.UniqueConstraint(
                 fields=('name', 'measurement_unit'),
                 name='unique_name_measurement_unit'
             )
-        ]
+        )
         ordering = ('name',)
 
     def __str__(self):
@@ -95,10 +98,12 @@ class Recipe(models.Model):
     cooking_time = models.PositiveSmallIntegerField(
         validators=(
             MinValueValidator(
-                1, 'Время приготовления не может быть меньше 1 минуты.'
+                MIN_COOKING_TIME,
+                f'Время приготовления не может быть меньше {MIN_COOKING_TIME} минуты.'
             ),
             MaxValueValidator(
-                1000, 'Время приготовления не может превышать 1000 минут.'
+                MAX_COOKING_TIME,
+                f'Время приготовления не может превышать {MAX_COOKING_TIME} минут.'
             )
         ),
         verbose_name='Время приготовления (в минутах)'
@@ -144,7 +149,10 @@ class RecipeIngredient(models.Model):
     amount = models.PositiveIntegerField(
         'Количество',
         validators=(
-            MinValueValidator(1, 'Количество не может быть меньше 1'),
+            MinValueValidator(
+                MIN_VALUE_AMOUNT,
+                f'Количество не может быть меньше {MIN_VALUE_AMOUNT}'
+            ),
         ),
     )
 
