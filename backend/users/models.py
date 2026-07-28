@@ -40,7 +40,7 @@ class User(AbstractUser):
         null=True,
         blank=True,
         verbose_name='Аватар',
-        validators=(validator_image_size)
+        validators=(validator_image_size,)
     )
 
     class Meta:
