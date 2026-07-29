@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import transaction
 from djoser.serializers import (
     UserSerializer as DjoserUserSerializer
@@ -149,18 +148,18 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         many=True,
     )
     cooking_time = serializers.IntegerField(
-        validators=(
-            MinValueValidator(
-                MIN_COOKING_TIME,
+        min_value=MIN_COOKING_TIME,
+        max_value=MAX_COOKING_TIME,
+        error_messages={
+            'min_value': (
                 'Время приготовления не может быть меньше '
                 f'{MIN_COOKING_TIME} минуты.'
             ),
-            MaxValueValidator(
-                MAX_COOKING_TIME,
+            'max_value': (
                 'Время приготовления не может превышать '
                 f'{MAX_COOKING_TIME} минут.'
-            )
-        ),
+            ),
+        }
     )
 
     class Meta:
@@ -294,7 +293,11 @@ class SubscriptionCreateSerializer(serializers.ModelSerializer):
         ).data
 
 
-class BaseFavoriteShoppingCartSerializer(serializers.Serializer):
+class BaseFavoriteShoppingCartSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = None
+        fields = ('user', 'recipe')
 
     def validate(self, data):
         request = self.context.get('request')
@@ -318,13 +321,11 @@ class BaseFavoriteShoppingCartSerializer(serializers.Serializer):
 
 class FavoriteSerializer(BaseFavoriteShoppingCartSerializer):
 
-    class Meta:
+    class Meta(BaseFavoriteShoppingCartSerializer.Meta):
         model = Favorite
-        fields = ('user', 'recipe')
 
 
 class ShoppingCartSerializer(BaseFavoriteShoppingCartSerializer):
 
-    class Meta:
+    class Meta(BaseFavoriteShoppingCartSerializer.Meta):
         model = Cart
-        fields = ('user', 'recipe')

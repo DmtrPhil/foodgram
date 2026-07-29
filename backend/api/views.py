@@ -146,11 +146,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = self.get_object()
         serializer = serializer_class(
             data={'recipe': recipe.id},
-            context={
-                'request': request,
-                'recipe': recipe,
-                'model': model
-            }
+            context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -165,7 +161,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self.add_to_collection(
             request,
             pk,
-            Favorite,
             BaseFavoriteShoppingCartSerializer
         )
 
@@ -192,7 +187,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self.add_to_collection(
             request,
             pk,
-            Cart,
             BaseFavoriteShoppingCartSerializer
         )
 
