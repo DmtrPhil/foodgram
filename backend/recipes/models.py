@@ -1,6 +1,7 @@
 import uuid
 
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 from .constants import (
@@ -95,18 +96,19 @@ class Recipe(models.Model):
         verbose_name='Теги'
     )
     cooking_time = models.PositiveSmallIntegerField(
-        min_value=MIN_COOKING_TIME,
-        max_value=MAX_COOKING_TIME,
-        error_messages={
-            'min_value': (
+        validators=(
+            MinValueValidator(
+                MIN_COOKING_TIME,
                 'Время приготовления не может быть меньше '
                 f'{MIN_COOKING_TIME} минуты.'
             ),
-            'max_value': (
+            MaxValueValidator(
+                MAX_COOKING_TIME,
                 'Время приготовления не может превышать '
                 f'{MAX_COOKING_TIME} минут.'
-            ),
-        }
+            )
+        ),
+        verbose_name='Время приготовления (в минутах)'
     )
     short_link = models.CharField(
         max_length=MAX_SHORT_LINK_LENGTH,
@@ -148,12 +150,12 @@ class RecipeIngredient(models.Model):
     )
     amount = models.PositiveIntegerField(
         'Количество',
-        min_value=MIN_VALUE_AMOUNT,
-        error_messages={
-            'min_value': (
-                f'Количество не может быть меньше {MIN_VALUE_AMOUNT}',
-            )
-        }
+        validators=(
+            MinValueValidator(
+                MIN_VALUE_AMOUNT,
+                f'Количество не может быть меньше {MIN_VALUE_AMOUNT}'
+            ),
+        ),
     )
 
     class Meta:
