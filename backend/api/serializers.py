@@ -89,7 +89,7 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
     amount = serializers.IntegerField(
         min_value=MIN_VALUE_AMOUNT,
         error_messages={
-            'min_value': 'Количество ингредиента должно быть больше 0.',
+            'min_value': 'Количество ингредиента должно быть больше {MIN_VALUE_AMOUNT}.',
         }
     )
 
@@ -178,7 +178,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     def validate_ingredients(self, value):
         if not value:
             raise serializers.ValidationError('Ингредиенты обязательны.')
-        ingredient_ids = [ingredient['id'] for ingredient in value]
+        ingredient_ids = [ingredient['ingredient'].id for ingredient in value]
         if len(ingredient_ids) != len(set(ingredient_ids)):
             raise serializers.ValidationError(
                 'Ингредиенты не должны повторяться.'
@@ -197,7 +197,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         RecipeIngredient.objects.bulk_create(
             RecipeIngredient(
                 recipe=recipe,
-                ingredient_id=ingredient['id'],
+                ingredient_id=ingredient['ingredient'].id,
                 amount=ingredient['amount']
             ) for ingredient in ingredients
         )

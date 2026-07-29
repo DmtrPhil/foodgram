@@ -1,5 +1,5 @@
 import uuid
-from io import StringIO
+from io import BytesIO
 
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Sum
@@ -215,7 +215,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             total_amount=Sum('amount')
         ).order_by('ingredient__name')
         content = self.format_shopping_list(ingredients)
-        file = StringIO(content)
+        file = BytesIO(content.encode('utf-8'))
         response = FileResponse(
             file,
             content_type='text/plain; charset=utf-8'
