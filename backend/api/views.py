@@ -157,7 +157,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @staticmethod
     def format_shopping_list(ingredients):
         return '\r\n'.join(
-            f'{item["ingredient__name"]} — {item["total_amount"]} {item["ingredient__measurement_unit"]}'
+            f'{item["ingredient__name"]} — '
+            f'{item["total_amount"]} '
+            f'{item["ingredient__measurement_unit"]}'
             for item in ingredients
         )
 
