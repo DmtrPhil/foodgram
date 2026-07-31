@@ -9,10 +9,15 @@ from django.urls import reverse
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly
+)
 from rest_framework.response import Response
 
-from .filters import IngredientFilter
+from .filters import IngredientFilter, RecipeFilter
+from .permissions import IsAuthorOrReadOnly
 from recipes.models import (
     Cart,
     Favorite,
@@ -23,7 +28,6 @@ from recipes.models import (
 )
 from .serializers import (
     AvatarSerializer,
-    BaseFavoriteShoppingCartSerializer,
     UserSerializer,
     IngredientSerializer,
     RecipeCreateSerializer,
@@ -31,6 +35,8 @@ from .serializers import (
     SubscriptionListSerializer,
     SubscriptionCreateSerializer,
     TagSerializer,
+    FavoriteSerializer,
+    ShoppingCartSerializer
 )
 from users.models import Subscription
 
@@ -51,7 +57,11 @@ class UserViewSet(DjoserUserViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-    @action(detail=False, methods=('get',))
+    @action(
+        detail=False,
+        methods=('get',),
+        permission_classes=(IsAuthenticated,)
+    )
     def me(self, request):
         serializer = self.get_serializer(
             request.user,
@@ -59,8 +69,12 @@ class UserViewSet(DjoserUserViewSet):
         )
         return Response(serializer.data)
 
-    @action(detail=True, methods=('post',))
-    def subscribe(self, request, pk=None):
+    @action(
+        detail=True,
+        methods=('post',),
+        permission_classes=(IsAuthenticated,)
+    )
+    def subscribe(self, request, id=None):
         author = self.get_object()
         serializer = SubscriptionCreateSerializer(
             data={'user': request.user.id, 'author': author.id},
@@ -71,7 +85,7 @@ class UserViewSet(DjoserUserViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def unsubscribe(self, request, pk=None):
+    def unsubscribe(self, request, id=None):
         author = self.get_object()
         deleted, _ = Subscription.objects.filter(
             user=request.user,
@@ -84,7 +98,11 @@ class UserViewSet(DjoserUserViewSet):
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False, methods=('get',))
+    @action(
+        detail=False,
+        methods=('get',),
+        permission_classes=(IsAuthenticated,)
+    )
     def subscriptions(self, request):
         authors = User.objects.filter(
             subs_on_author__user=request.user
@@ -99,7 +117,12 @@ class UserViewSet(DjoserUserViewSet):
         )
         return self.get_paginated_response(serializer.data)
 
-    @action(detail=False, methods=('put',), url_path='me/avatar')
+    @action(
+        detail=False,
+        methods=('put',),
+        url_path='me/avatar',
+        permission_classes=(IsAuthenticated,)
+    )
     def avatar(self, request):
         serializer = AvatarSerializer(
             request.user,
@@ -126,12 +149,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         'tags',
         'ingredients'
     )
+    serializer_class = RecipeSerializer
+    permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
 
     @staticmethod
     def format_shopping_list(ingredients):
         return '\r\n'.join(
-            f'{name} — {data["amount"]} {data["unit"]}'
-            for name, data in ingredients.items()
+            f'{item["ingredient__name"]} — {item["total_amount"]} {item["ingredient__measurement_unit"]}'
+            for item in ingredients
         )
 
     def get_serializer_class(self):
@@ -140,12 +167,15 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return RecipeSerializer
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        serializer.save()
 
-    def add_to_collection(self, request, pk, model, serializer_class):
+    def add_to_collection(self, request, pk, serializer_class):
         recipe = self.get_object()
         serializer = serializer_class(
-            data={'recipe': recipe.id},
+            data={
+                'recipe': recipe.id,
+                'user': request.user.id
+            },
             context={'request': request}
         )
         serializer.is_valid(raise_exception=True)
@@ -161,7 +191,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self.add_to_collection(
             request,
             pk,
-            BaseFavoriteShoppingCartSerializer
+            FavoriteSerializer
         )
 
     @favorite.mapping.delete
@@ -187,7 +217,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return self.add_to_collection(
             request,
             pk,
-            BaseFavoriteShoppingCartSerializer
+            ShoppingCartSerializer
         )
 
     @shopping_cart.mapping.delete

@@ -83,7 +83,7 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
         queryset=Ingredient.objects.all(),
         source='ingredient',
         error_messages={
-            'does_not_exist': 'Ингредиент с id {value} не существует.',
+            'does_not_exist': 'Ингредиент с id {pk_value} не существует.',
         }
     )
     amount = serializers.IntegerField(
@@ -91,7 +91,7 @@ class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
         error_messages={
             'min_value': (
                 'Количество ингредиента должно '
-                f'быть больше {MIN_VALUE_AMOUNT}.',
+                f'быть больше {MIN_VALUE_AMOUNT}.'
             )
         }
     )
@@ -144,7 +144,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 class RecipeCreateSerializer(serializers.ModelSerializer):
     author = serializers.HiddenField(default=serializers.CurrentUserDefault())
-    image = Base64ImageField(required=True)
+    image = Base64ImageField(required=True, allow_null=False)
     ingredients = RecipeIngredientCreateSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
@@ -193,6 +193,11 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Теги обязательны.')
         if len(value) != len(set(value)):
             raise serializers.ValidationError('Теги не должны повторяться.')
+        return value
+
+    def validate_image(self, value):
+        if not value:
+            raise serializers.ValidationError('Изображение обязательно.')
         return value
 
     @staticmethod
